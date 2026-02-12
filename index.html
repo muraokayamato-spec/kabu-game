@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>かぶしき とうし ゲーム</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --red: #e74c3c;
+    --red-bg: #fde8e8;
+    --blue: #3498db;
+    --blue-bg: #e8f0fd;
+    --green: #27ae60;
+    --green-bg: #e8fdf0;
+    --purple: #764ba2;
+    --purple-light: #667eea;
+    --gold: #f39c12;
+    --gray: #888;
+    --light-gray: #f8f9fa;
+  }
+
+  body {
+    font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    background: linear-gradient(135deg, var(--purple-light) 0%, var(--purple) 100%);
+    min-height: 100vh;
+    color: #333;
+  }
+
+  /* ===== ダッシュボード ===== */
+  .dashboard {
+    background: rgba(255,255,255,0.97);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .dashboard-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .dashboard-top h1 {
+    font-size: 1.3em;
+    background: linear-gradient(135deg, var(--purple-light), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .data-btns { display: flex; gap: 6px; }
+  .data-btns button {
+    background: var(--light-gray);
+    border: 1px solid #ddd;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.72em;
+    cursor: pointer;
+    color: #555;
+  }
+  .data-btns button:hover { background: #eee; }
+
+  .dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+  }
+  .dash-card {
+    padding: 14px 16px;
+    text-align: center;
+    border-right: 1px solid #f0f0f0;
+  }
+  .dash-card:last-child { border-right: none; }
+  .dash-label { font-size: 0.65em; color: var(--gray); margin-bottom: 2px; letter-spacing: 0.5px; }
+  .dash-value { font-size: 1.8em; font-weight: 900; line-height: 1.1; }
+  .dash-sub { font-size: 0.72em; margin-top: 2px; }
+  .dash-value.green { color: var(--green); }
+  .dash-value.blue { color: var(--blue); }
+  .dash-value.purple { color: var(--purple); }
+  .dash-value.gold { color: var(--gold); }
+  .dash-sub.up { color: var(--red); }
+  .dash-sub.down { color: var(--blue); }
+  .dash-sub.neutral { color: var(--gray); }
+
+  .payout-banner {
+    display: none;
+    background: linear-gradient(135deg, #ffecd2, #fcb69f);
+    padding: 10px 24px;
+    text-align: center;
+    font-weight: bold;
+    cursor: pointer;
+    animation: pulse 2s infinite;
+  }
+  .payout-banner.active { display: block; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.85} }
+
+  /* ===== コンテナ ===== */
+  .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+
+  .status-bar {
+    background: rgba(255,255,255,0.9);
+    border-radius: 12px;
+    padding: 8px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8em;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .status-bar .update-time { color: var(--gray); }
+  .status-bar button {
+    background: linear-gradient(135deg, var(--purple-light), var(--purple));
+    color: white; border: none; padding: 5px 12px; border-radius: 8px;
+    cursor: pointer; font-weight: bold; font-size: 0.85em;
+  }
+
+  /* ===== 一覧カード（大改修） ===== */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .stock-card {
+    background: rgba(255,255,255,0.96);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+  .stock-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.13);
+  }
+  .stock-card:active { transform: scale(0.98); }
+
+  /* カード上部のカラーバー */
+  .card-bar {
+    height: 6px;
+    width: 100%;
+  }
+  .card-bar.up   { background: linear-gradient(90deg, #f8b4b4, var(--red)); }
+  .card-bar.down { background: linear-gradient(90deg, #b4d4f8, var(--blue)); }
+  .card-bar.flat { background: linear-gradient(90deg, #ddd, #bbb); }
+
+  .card-body { padding: 14px 16px 12px; }
+
+  /* 銘柄ヘッダー行 */
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .card-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    flex-shrink: 0;
+    color: white;
+    font-weight: 900;
+  }
+  .card-header-text { flex: 1; min-width: 0; }
+  .card-name {
+    font-size: 1.1em;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-badges {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+    flex-wrap: wrap;
+  }
+  .card-badges .tag {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.58em;
+    font-weight: bold;
+    color: white;
+  }
+  .tag.stable   { background: var(--green); }
+  .tag.moderate { background: var(--gold); }
+  .tag.volatile { background: var(--red); }
+  .card-badges .coeff {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.58em;
+    font-weight: bold;
+    color: white;
+    background: var(--purple);
+  }
+
+  /* 価格と矢印 */
+  .card-price-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 4px;
+  }
+  .card-game-price {
+    font-size: 2.2em;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .card-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 56px;
+  }
+  .card-arrow .arrow-icon {
+    font-size: 1.6em;
+    line-height: 1;
+  }
+  .card-arrow .arrow-pct {
+    font-size: 0.85em;
+    font-weight: 800;
+  }
+  .card-arrow.up .arrow-icon   { color: var(--red); }
+  .card-arrow.up .arrow-pct    { color: var(--red); }
+  .card-arrow.down .arrow-icon { color: var(--blue); }
+  .card-arrow.down .arrow-pct  { color: var(--blue); }
+  .card-arrow.flat .arrow-icon { color: var(--gray); }
+  .card-arrow.flat .arrow-pct  { color: var(--gray); }
+
+  .card-real-price {
+    font-size: 0.7em;
+    color: var(--gray);
+    margin-bottom: 6px;
+  }
+
+  /* ミニチャート */
+  .card-chart { height: 52px; margin: 2px 0 6px; }
+  .card-chart canvas { width: 100%; height: 100%; }
+
+  /* 保有表示 */
+  .card-holding {
+    background: var(--light-gray);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.78em;
+    margin-top: 6px;
+  }
+  .card-holding .hp-up   { color: var(--red); font-weight: bold; }
+  .card-holding .hp-down { color: var(--blue); font-weight: bold; }
+
+  /* カード下部のタップ誘導 */
+  .card-footer {
+    border-top: 1px solid #f0f0f0;
+    padding: 6px 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72em;
+    color: var(--purple);
+    font-weight: bold;
+  }
+
+  /* ===== 詳細ページ（スライドイン） ===== */
+  .detail-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .detail-overlay.active { display: flex; }
+
+  .detail-panel {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 600px;
+    max-height: 92vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  .detail-handle {
+    width: 40px; height: 5px;
+    background: #ddd;
+    border-radius: 3px;
+    margin: 10px auto 4px;
+  }
+
+  .detail-header {
+    padding: 8px 20px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .detail-icon {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2em; color: white; font-weight: 900; flex-shrink: 0;
+  }
+  .detail-title { flex: 1; }
+  .detail-title .dt-name { font-size: 1.3em; font-weight: 800; }
+  .detail-title .dt-sub { font-size: 0.75em; color: var(--gray); margin-top: 2px; }
+  .detail-close {
+    width: 36px; height: 36px;
+    border-radius: 50%; border: none;
+    background: var(--light-gray);
+    font-size: 1.2em; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .detail-price-area {
+    padding: 16px 20px;
+    text-align: center;
+  }
+  .detail-game-price {
+    font-size: 3.2em;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .detail-change-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .detail-arrow { font-size: 1.8em; }
+  .detail-change-pct { font-size: 1.3em; font-weight: 800; }
+  .detail-change-pts { font-size: 0.9em; color: var(--gray); }
+  .detail-change-row.up .detail-arrow,
+  .detail-change-row.up .detail-change-pct { color: var(--red); }
+  .detail-change-row.down .detail-arrow,
+  .detail-change-row.down .detail-change-pct { color: var(--blue); }
+  .detail-change-row.flat .detail-arrow,
+  .detail-change-row.flat .detail-change-pct { color: var(--gray); }
+
+  .detail-real-price {
+    font-size: 0.8em;
+    color: var(--gray);
+    margin-top: 8px;
+  }
+
+  /* 大きなチャート（SVG） */
+  .detail-chart {
+    margin: 8px 12px;
+  }
+  .detail-chart svg {
+    border-radius: 12px;
+  }
+
+  /* 数値ラベル行 */
+  .detail-chart-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px 8px;
+    font-size: 0.65em;
+    color: var(--gray);
+  }
+
+  /* 解説セクション */
+  .detail-explain {
+    padding: 12px 20px;
+    background: #faf9ff;
+    margin: 0 12px;
+    border-radius: 12px;
+    font-size: 0.82em;
+    line-height: 1.7;
+    color: #555;
+  }
+  .detail-explain b { color: var(--purple); }
+
+  /* 保有情報 */
+  .detail-holding {
+    padding: 12px 20px;
+    margin: 10px 12px;
+    background: var(--light-gray);
+    border-radius: 12px;
+    font-size: 0.85em;
+  }
+  .detail-holding .dh-title { font-weight: bold; margin-bottom: 4px; }
+  .detail-holding .dh-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .detail-holding .dh-grid div span { font-weight: 700; }
+  .dh-profit-up   { color: var(--red); font-weight: 800 !important; }
+  .dh-profit-down { color: var(--blue); font-weight: 800 !important; }
+
+  /* 売買ボタン */
+  .detail-actions {
+    display: flex;
+    gap: 10px;
+    padding: 12px 20px 16px;
+  }
+  .detail-actions button {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 1.15em;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .detail-actions button:hover { opacity: 0.85; }
+  .detail-actions .btn-buy  { background: linear-gradient(135deg, var(--red), #c0392b); color: white; }
+  .detail-actions .btn-sell { background: linear-gradient(135deg, var(--blue), #2980b9); color: white; }
+  .detail-actions .btn-sell:disabled { background: #ccc; cursor: not-allowed; }
+
+  /* ===== 各セクション ===== */
+  .section-card {
+    background: rgba(255,255,255,0.95);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    margin-bottom: 14px;
+  }
+  .section-card h2 { font-size: 1.05em; margin-bottom: 10px; }
+
+  .payout-history, .history-table {
+    width: 100%; border-collapse: collapse; font-size: 0.8em;
+  }
+  .payout-history th, .history-table th {
+    background: var(--light-gray); padding: 6px 8px; text-align: left;
+    border-bottom: 2px solid #eee;
+  }
+  .payout-history td, .history-table td {
+    padding: 5px 8px; border-bottom: 1px solid #f0f0f0;
+  }
+  .payout-history .paid { color: var(--green); font-weight: bold; }
+  .payout-history .skipped { color: var(--gray); }
+  .history-table .buy-row { color: var(--red); }
+  .history-table .sell-row { color: var(--blue); }
+
+  /* ===== モーダル ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 300;
+    justify-content: center;
+    align-items: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: white; border-radius: 20px; padding: 24px;
+    max-width: 380px; width: 90%; text-align: center;
+  }
+  .modal h2 { margin-bottom: 10px; font-size: 1.15em; }
+  .modal .modal-price { font-size: 1.7em; font-weight: 900; margin: 8px 0; }
+  .modal .modal-detail { color: #666; margin-bottom: 14px; font-size: 0.9em; }
+
+  .qty-control {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; margin: 8px 0 14px;
+  }
+  .qty-control button {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid var(--purple-light); background: white;
+    color: var(--purple-light); font-size: 1.4em; font-weight: bold;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .qty-control span {
+    font-size: 1.5em; font-weight: bold; min-width: 40px; text-align: center;
+  }
+  .modal .modal-actions { display: flex; gap: 10px; justify-content: center; }
+  .modal .modal-actions button {
+    padding: 12px 24px; border: none; border-radius: 12px;
+    font-weight: bold; font-size: 1em; cursor: pointer;
+  }
+  .modal .btn-confirm { background: var(--red); color: white; }
+  .modal .btn-confirm.sell-confirm { background: var(--blue); }
+  .modal .btn-confirm.payout-confirm { background: var(--green); }
+  .modal .btn-cancel { background: #eee; color: #333; }
+
+  .footer-actions {
+    text-align: center; margin-top: 8px; padding-bottom: 28px;
+    display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;
+  }
+  .footer-actions button {
+    background: rgba(255,255,255,0.2); color: white;
+    border: 2px solid rgba(255,255,255,0.4); padding: 6px 16px;
+    border-radius: 8px; cursor: pointer; font-size: 0.78em;
+  }
+
+  @media (max-width: 700px) {
+    .dashboard-cards { grid-template-columns: repeat(2, 1fr); }
+    .dash-value { font-size: 1.35em; }
+    .grid { grid-template-columns: 1fr; }
+    .detail-panel { max-width: 100%; border-radius: 20px 20px 0 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== ダッシュボード ===== -->
+<div class="dashboard">
+  <div class="dashboard-top">
+    <h1>💰 かぶしき とうし ゲーム</h1>
+    <div class="data-btns">
+      <button onclick="exportData()">💾 ほぞん</button>
+      <button onclick="document.getElementById('importFile').click()">📂 よみこみ</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+  </div>
+  <div class="dashboard-cards">
+    <div class="dash-card">
+      <div class="dash-label">💵 げんきん</div>
+      <div class="dash-value green" id="dashCash">1,000円</div>
+      <div class="dash-sub neutral">つかえる おかね</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-label">📊 かぶ</div>
+      <div class="dash-value blue" id="dashStock">0円</div>
+      <div class="dash-sub neutral">もっている かぶ</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-label">🏦 ごうけい</div>
+      <div class="dash-value purple" id="dashTotal">1,000円</div>
+      <div class="dash-sub neutral" id="dashProfit">±0円</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-label">🎁 おこづかい</div>
+      <div class="dash-value gold" id="dashPaidOut">0円</div>
+      <div class="dash-sub neutral" id="dashPayoutInfo">まだ もらっていない</div>
+    </div>
+  </div>
+  <div class="payout-banner" id="payoutBanner" onclick="openPayoutModal()">
+    🎉 げつまつ！ りえき が あるよ！ ここを おして おこづかいを もらおう！
+  </div>
+</div>
+
+<!-- ===== メイン ===== -->
+<div class="container">
+  <div class="status-bar">
+    <span class="update-time" id="updateTime">よみこみ中...</span>
+    <button onclick="refreshPrices()">🔄 さいしんにする</button>
+  </div>
+
+  <div class="grid" id="stockGrid"></div>
+
+  <div class="section-card">
+    <h2>🎁 おこづかい りれき</h2>
+    <table class="payout-history">
+      <thead><tr><th>つき</th><th>しさん</th><th>りえき</th><th>もらった？</th><th>きんがく</th></tr></thead>
+      <tbody id="payoutBody">
+        <tr><td colspan="5" style="text-align:center;color:#999;">まだ おこづかいを もらっていません</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-card">
+    <h2>📋 とりひき りれき</h2>
+    <table class="history-table">
+      <thead><tr><th>ひづけ</th><th>めいがら</th><th>かう／うる</th><th>かぶか</th><th>すう</th><th>きんがく</th></tr></thead>
+      <tbody id="historyBody">
+        <tr><td colspan="6" style="text-align:center;color:#999;">まだ とりひき が ありません</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer-actions">
+    <button onclick="openPayoutModal()">🎁 おこづかい せいさん</button>
+    <button onclick="resetGame()">🔁 リセット</button>
+  </div>
+</div>
+
+<!-- ===== 詳細パネル ===== -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetailFromBg(event)">
+  <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<!-- ===== モーダル ===== -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+// =====================================================
+// 銘柄設定
+// =====================================================
+const STOCKS = [
+  { id:'toyota',     name:'トヨタ',         flag:'🇯🇵', emoji:'🚗', color:'#1a73e8', symbol:'7203.T', type:'jp', divisor:100,  volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'せかいで いちばん おおきい くるまの かいしゃ。たくさんの くるまを つくっているよ。あんていした かぶだね。' },
+  { id:'seven',      name:'セブンイレブン',   flag:'🇯🇵', emoji:'🏪', color:'#e8590c', symbol:'3382.T', type:'jp', divisor:100,  volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'みんなが しっている コンビニ。まいにち たくさんの ひとが おかいものを するから、あんていしているよ。' },
+  { id:'nintendo',   name:'にんてんどう',     flag:'🇯🇵', emoji:'🎮', color:'#e60012', symbol:'7974.T', type:'jp', divisor:100,  volatility:1.0, tag:'moderate', tagLabel:'ふつう',         desc:'マリオや スイッチで ゆうめいな ゲームがいしゃ。あたらしい ゲームが でると かぶが うごくよ！' },
+  { id:'fastretail', name:'ユニクロ',         flag:'🇯🇵', emoji:'👕', color:'#c2255c', symbol:'9983.T', type:'jp', divisor:1000, volatility:1.0, tag:'moderate', tagLabel:'ふつう',         desc:'ふくを つくる おおきな かいしゃ。せかいじゅうに おみせが あるよ。ふくが うれると かぶが あがるよ。' },
+  { id:'softbank',   name:'ソフトバンク',     flag:'🇯🇵', emoji:'📱', color:'#495057', symbol:'9984.T', type:'jp', divisor:100,  volatility:2.0, tag:'volatile', tagLabel:'おおきくうごく', desc:'いろんな かいしゃに おかねを かしている かいしゃ。おおきく あがったり さがったり するよ！' },
+  { id:'cocacola',   name:'コカ・コーラ',     flag:'🇺🇸', emoji:'🥤', color:'#d32f2f', symbol:'KO',     type:'us', divisor:1,    volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'みんなが のむ ジュースの かいしゃ。アメリカの かいしゃだよ。とっても あんていしているよ。' },
+  { id:'mcdonalds',  name:'マクドナルド',     flag:'🇺🇸', emoji:'🍔', color:'#ffc107', symbol:'MCD',    type:'us', divisor:10,   volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'ハンバーガーの おみせ！ せかいじゅうに あるから、いつも あんていしているよ。' },
+  { id:'apple',      name:'アップル',         flag:'🇺🇸', emoji:'🍎', color:'#333333', symbol:'AAPL',   type:'us', divisor:10,   volatility:1.2, tag:'moderate', tagLabel:'ふつう',         desc:'iPhone を つくっている かいしゃ。あたらしい iPhone が でると おおきく うごくよ。' },
+  { id:'tesla',      name:'テスラ',           flag:'🇺🇸', emoji:'⚡', color:'#9c27b0', symbol:'TSLA',   type:'us', divisor:10,   volatility:2.0, tag:'volatile', tagLabel:'おおきくうごく', desc:'でんきの くるまを つくる かいしゃ。ロケットも つくっている イーロン・マスクさんの かいしゃだよ。すごく おおきく うごく！' },
+  { id:'nvidia',     name:'エヌビディア',     flag:'🇺🇸', emoji:'🧠', color:'#76b900', symbol:'NVDA',   type:'us', divisor:10,   volatility:2.5, tag:'volatile', tagLabel:'おおきくうごく', desc:'AI（じんこうちのう）の ための チップを つくる かいしゃ。いま いちばん ちゅうもくされていて、いちばん おおきく うごくよ！' },
+];
+
+const BASE_REAL_PRICES = {
+  toyota:3714, seven:2334, nintendo:8930, fastretail:68510, softbank:4902,
+  cocacola:78.61, mcdonalds:325.97, apple:273.68, tesla:424.99, nvidia:188.54
+};
+
+// =====================================================
+// State
+// =====================================================
+let state = loadState();
+
+function defaultState() {
+  const basePrices = {};
+  const gameBasePrices = {};
+  STOCKS.forEach(s => {
+    basePrices[s.id] = BASE_REAL_PRICES[s.id];
+    gameBasePrices[s.id] = Math.round(BASE_REAL_PRICES[s.id] / s.divisor);
+  });
+  return {
+    cash: 1000, initialCapital: 1000,
+    holdings: {}, history: [], priceHistory: {},
+    currentGamePrices: {}, currentRealPrices: {},
+    baseRealPrices: basePrices, gameBasePrices: gameBasePrices,
+    payoutHistory: [], totalPaidOut: 0,
+    startDate: new Date().toISOString(), lastPayoutMonth: null,
+  };
+}
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('virtualStockV2');
+    if (s) {
+      const p = JSON.parse(s);
+      if (!p.initialCapital) p.initialCapital = 1000;
+      if (!p.payoutHistory) p.payoutHistory = [];
+      if (!p.totalPaidOut) p.totalPaidOut = 0;
+      if (!p.baseRealPrices) {
+        p.baseRealPrices = { ...BASE_REAL_PRICES };
+        p.gameBasePrices = {};
+        STOCKS.forEach(s2 => { p.gameBasePrices[s2.id] = Math.round(BASE_REAL_PRICES[s2.id] / s2.divisor); });
+      }
+      return p;
+    }
+  } catch(e) {}
+  return defaultState();
+}
+function saveState() { localStorage.setItem('virtualStockV2', JSON.stringify(state)); }
+
+// =====================================================
+// 価格
+// =====================================================
+function calcGamePrice(stockId, realPrice) {
+  const stock = STOCKS.find(s => s.id === stockId);
+  const baseReal = state.baseRealPrices[stockId] || BASE_REAL_PRICES[stockId];
+  const gameBase = state.gameBasePrices[stockId] || Math.round(baseReal / stock.divisor);
+  const realChangeRate = (realPrice - baseReal) / baseReal;
+  const gameChangeRate = realChangeRate * stock.volatility;
+  return Math.max(1, Math.round(gameBase * (1 + gameChangeRate)));
+}
+function formatRealPrice(stockId, realPrice) {
+  const stock = STOCKS.find(s => s.id === stockId);
+  return stock.type === 'us' ? `$${realPrice.toFixed(2)}` : `¥${Math.round(realPrice).toLocaleString()}`;
+}
+
+// 変動情報を取得
+function getChange(stockId) {
+  const hist = state.priceHistory[stockId] || [];
+  if (hist.length < 2) return { pct: 0, pts: 0, dir: 'flat' };
+  const prev = hist[hist.length - 2];
+  const curr = hist[hist.length - 1];
+  if (!prev || prev === curr) return { pct: 0, pts: 0, dir: 'flat' };
+  const pct = ((curr - prev) / prev * 100);
+  return { pct, pts: curr - prev, dir: curr > prev ? 'up' : 'down' };
+}
+
+// =====================================================
+// 株価取得
+// =====================================================
+async function fetchPrices() {
+  document.getElementById('updateTime').textContent = 'かぶか を よみこんでいます...';
+  const symbolStr = STOCKS.map(s => s.symbol).join(',');
+  let fetched = false;
+
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${symbolStr}&range=5d&interval=1d`;
+    let data = null;
+    try { const r = await fetch(url); if (r.ok) data = await r.json(); } catch(e) {
+      try { const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`); if (r.ok) data = await r.json(); } catch(e2) {}
+    }
+    if (data && data.spark && data.spark.result) {
+      data.spark.result.forEach(item => {
+        const stock = STOCKS.find(s => s.symbol === item.symbol);
+        if (stock && item.response && item.response[0]) {
+          const closes = item.response[0].indicators.quote[0].close;
+          const rp = closes[closes.length - 1];
+          if (rp) applyRealPrice(stock.id, rp);
+        }
+      });
+      fetched = true;
+    }
+  } catch(e) {}
+
+  if (!fetched) {
+    try {
+      const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`)}`);
+      if (r.ok) { const d = await r.json(); if (d.quoteResponse && d.quoteResponse.result) {
+        d.quoteResponse.result.forEach(q => { const s = STOCKS.find(st => st.symbol === q.symbol); if (s) applyRealPrice(s.id, q.regularMarketPrice); });
+        fetched = true;
+      }}
+    } catch(e) {}
+  }
+
+  if (!fetched) {
+    STOCKS.forEach(s => { if (!state.currentRealPrices[s.id]) applyRealPrice(s.id, BASE_REAL_PRICES[s.id]); });
+    initChartHistory();
+    document.getElementById('updateTime').textContent = `きじゅん かかく（${new Date().toLocaleTimeString('ja-JP')}）`;
+  } else {
+    document.getElementById('updateTime').textContent = `さいしん: ${new Date().toLocaleString('ja-JP')}`;
+  }
+  saveState(); checkPayoutEligibility(); updateUI();
+}
+
+function applyRealPrice(stockId, realPrice) {
+  state.currentRealPrices[stockId] = realPrice;
+  state.currentGamePrices[stockId] = calcGamePrice(stockId, realPrice);
+  if (!state.priceHistory[stockId]) state.priceHistory[stockId] = [];
+  const hist = state.priceHistory[stockId];
+  if (hist.length === 0 || hist[hist.length - 1] !== state.currentGamePrices[stockId]) {
+    hist.push(state.currentGamePrices[stockId]);
+    if (hist.length > 30) hist.shift();
+  }
+}
+function initChartHistory() {
+  STOCKS.forEach(stock => {
+    if (!state.priceHistory[stock.id] || state.priceHistory[stock.id].length === 0) {
+      state.priceHistory[stock.id] = [];
+      const base = state.currentGamePrices[stock.id] || state.gameBasePrices[stock.id];
+      for (let i = 9; i >= 0; i--) {
+        state.priceHistory[stock.id].push(Math.max(1, Math.round(base + (Math.random() - 0.5) * base * stock.volatility * 0.03)));
+      }
+      state.priceHistory[stock.id].push(base);
+    }
+  });
+}
+async function refreshPrices() { await fetchPrices(); }
+
+// =====================================================
+// UI
+// =====================================================
+function updateUI() { updateDashboard(); renderStockCards(); renderPayoutHistory(); renderHistory(); }
+
+function calcTotals() {
+  let sv = 0;
+  for (const [id, h] of Object.entries(state.holdings)) { if (h.qty > 0 && state.currentGamePrices[id]) sv += h.qty * state.currentGamePrices[id]; }
+  const total = state.cash + sv;
+  return { stockValue: sv, total, profit: total - state.initialCapital };
+}
+
+function updateDashboard() {
+  const { stockValue, total, profit } = calcTotals();
+  document.getElementById('dashCash').textContent = `${state.cash.toLocaleString()}円`;
+  document.getElementById('dashStock').textContent = `${stockValue.toLocaleString()}円`;
+  document.getElementById('dashTotal').textContent = `${total.toLocaleString()}円`;
+  const pe = document.getElementById('dashProfit');
+  if (profit > 0)      { pe.textContent = `📈 +${profit}円`; pe.className = 'dash-sub up'; }
+  else if (profit < 0) { pe.textContent = `📉 ${profit}円`;  pe.className = 'dash-sub down'; }
+  else                  { pe.textContent = '±0円';           pe.className = 'dash-sub neutral'; }
+  document.getElementById('dashPaidOut').textContent = `${state.totalPaidOut.toLocaleString()}円`;
+  const pi = document.getElementById('dashPayoutInfo');
+  pi.textContent = state.payoutHistory.length > 0 ? `さいご: ${state.payoutHistory[state.payoutHistory.length-1].month}` : 'まだ もらっていない';
+}
+
+// ===== 一覧カード =====
+function renderStockCards() {
+  const grid = document.getElementById('stockGrid');
+  grid.innerHTML = '';
+  STOCKS.forEach(stock => {
+    const price = state.currentGamePrices[stock.id];
+    const realPrice = state.currentRealPrices[stock.id];
+    const holding = state.holdings[stock.id] || { qty: 0, avgCost: 0 };
+    if (!price) return;
+
+    const ch = getChange(stock.id);
+    const arrowIcon = ch.dir === 'up' ? '↑' : ch.dir === 'down' ? '↓' : '→';
+    const pctText = ch.dir === 'flat' ? '±0%' : (ch.dir === 'up' ? `+${ch.pct.toFixed(1)}%` : `${ch.pct.toFixed(1)}%`);
+
+    let holdingHTML = '';
+    if (holding.qty > 0) {
+      const hv = holding.qty * price;
+      const hp = hv - (holding.qty * holding.avgCost);
+      holdingHTML = `<div class="card-holding">🎒 ${holding.qty}かぶ もってる（<span class="${hp >= 0 ? 'hp-up' : 'hp-down'}">${hp >= 0 ? '+' : ''}${hp}円</span>）</div>`;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'stock-card';
+    card.onclick = () => openDetail(stock.id);
+    card.innerHTML = `
+      <div class="card-bar ${ch.dir}"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon" style="background:${stock.color}">${stock.emoji}</div>
+          <div class="card-header-text">
+            <div class="card-name">${stock.flag} ${stock.name}</div>
+            <div class="card-badges">
+              <span class="tag ${stock.tag}">${stock.tagLabel}</span>
+              <span class="coeff">×${stock.volatility}</span>
+            </div>
+          </div>
+          <div class="card-arrow ${ch.dir}">
+            <span class="arrow-icon">${arrowIcon}</span>
+            <span class="arrow-pct">${pctText}</span>
+          </div>
+        </div>
+        <div class="card-price-row">
+          <span class="card-game-price">${price}円</span>
+        </div>
+        <div class="card-real-price">ほんとうの かぶか: ${realPrice ? formatRealPrice(stock.id, realPrice) : '---'}</div>
+        <div class="card-chart"><canvas id="chart-${stock.id}"></canvas></div>
+        ${holdingHTML}
+      </div>
+      <div class="card-footer">くわしく みる →</div>`;
+    grid.appendChild(card);
+    requestAnimationFrame(() => drawMiniChart(stock.id, `chart-${stock.id}`, 52));
+  });
+}
+
+// ===== チャート描画（共通） =====
+function drawMiniChart(stockId, canvasId, h) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = rect.width;
+  if (w < 10) return; // パネルがまだ開ききっていない場合はスキップ
+  canvas.width = w * 2; canvas.height = h * 2;
+  ctx.scale(2, 2);
+
+  const hist = state.priceHistory[stockId] || [];
+  if (hist.length < 2) return;
+
+  const min = Math.min(...hist) * 0.96;
+  const max = Math.max(...hist) * 1.04;
+  const range = max - min || 1;
+  const isUp = hist[hist.length - 1] >= hist[0];
+  const lineColor = isUp ? '#e74c3c' : '#3498db';
+  const fill = isUp ? 'rgba(231,76,60' : 'rgba(52,152,219';
+
+  // グリッド線
+  ctx.strokeStyle = '#f0f0f0';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 4; i++) {
+    const y = (h / 4) * i;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+
+  // 線
+  ctx.beginPath();
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  hist.forEach((p, i) => {
+    const x = (i / (hist.length - 1)) * w;
+    const y = h - ((p - min) / range) * (h - 10) - 5;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // 塗り
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, `${fill},0.18)`);
+  grad.addColorStop(1, `${fill},0)`);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // ドット
+  const lastP = hist[hist.length - 1];
+  const ly = h - ((lastP - min) / range) * (h - 10) - 5;
+  ctx.beginPath();
+  ctx.arc(w - 1, ly, 4.5, 0, Math.PI * 2);
+  ctx.fillStyle = lineColor;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(w - 1, ly, 2, 0, Math.PI * 2);
+  ctx.fillStyle = 'white';
+  ctx.fill();
+}
+
+// ===== 詳細パネル =====
+function openDetail(stockId) {
+  const stock = STOCKS.find(s => s.id === stockId);
+  const price = state.currentGamePrices[stockId];
+  const realPrice = state.currentRealPrices[stockId];
+  const holding = state.holdings[stockId] || { qty: 0, avgCost: 0 };
+  const ch = getChange(stockId);
+  const hist = state.priceHistory[stockId] || [];
+
+  const arrowIcon = ch.dir === 'up' ? '📈' : ch.dir === 'down' ? '📉' : '➡️';
+  const pctText = ch.dir === 'flat' ? '±0%' : (ch.dir === 'up' ? `+${ch.pct.toFixed(1)}%` : `${ch.pct.toFixed(1)}%`);
+  const ptsText = ch.pts !== 0 ? `(${ch.pts > 0 ? '+' : ''}${ch.pts}円)` : '';
+
+  let holdingHTML = '';
+  if (holding.qty > 0) {
+    const hv = holding.qty * price;
+    const hp = hv - (holding.qty * holding.avgCost);
+    const pClass = hp >= 0 ? 'dh-profit-up' : 'dh-profit-down';
+    holdingHTML = `
+      <div class="detail-holding">
+        <div class="dh-title">🎒 もっている かぶ</div>
+        <div class="dh-grid">
+          <div>かぶすう: <span>${holding.qty}かぶ</span></div>
+          <div>かったねだん: <span>${holding.avgCost}円</span></div>
+          <div>いまの ねだん: <span>${hv}円</span></div>
+          <div>もうけ: <span class="${pClass}">${hp >= 0 ? '+' : ''}${hp}円</span></div>
+        </div>
+      </div>`;
+  }
+
+  // チャートの高値/安値
+  const chartHigh = hist.length > 0 ? Math.max(...hist) : price;
+  const chartLow  = hist.length > 0 ? Math.min(...hist) : price;
+
+  const panel = document.getElementById('detailPanel');
+  panel.innerHTML = `
+    <div class="detail-handle"></div>
+    <div class="detail-header">
+      <div class="detail-icon" style="background:${stock.color}">${stock.emoji}</div>
+      <div class="detail-title">
+        <div class="dt-name">${stock.flag} ${stock.name}</div>
+        <div class="dt-sub">
+          <span class="tag ${stock.tag}" style="color:white;padding:1px 6px;border-radius:8px;font-size:0.85em;">${stock.tagLabel}</span>
+          <span style="background:var(--purple);color:white;padding:1px 6px;border-radius:8px;font-size:0.85em;">×${stock.volatility}</span>
+        </div>
+      </div>
+      <button class="detail-close" onclick="closeDetail()">✕</button>
+    </div>
+
+    <div class="detail-price-area">
+      <div class="detail-game-price">${price}円</div>
+      <div class="detail-change-row ${ch.dir}">
+        <span class="detail-arrow">${arrowIcon}</span>
+        <span class="detail-change-pct">${pctText}</span>
+        <span class="detail-change-pts">${ptsText}</span>
+      </div>
+      <div class="detail-real-price">ほんとうの かぶか: ${realPrice ? formatRealPrice(stockId, realPrice) : '---'}</div>
+    </div>
+
+    <div class="detail-chart" id="detail-chart-area"></div>
+
+    <div class="detail-explain">
+      <b>${stock.emoji} ${stock.name}って なに？</b><br>
+      ${stock.desc}
+    </div>
+
+    ${holdingHTML}
+
+    <div class="detail-actions">
+      <button class="btn-buy" onclick="event.stopPropagation(); openTradeModal('${stockId}','buy')">🛒 かう</button>
+      <button class="btn-sell" onclick="event.stopPropagation(); openTradeModal('${stockId}','sell')" ${holding.qty === 0 ? 'disabled' : ''}>💰 うる</button>
+    </div>`;
+
+  // SVGチャートを生成して埋め込む（canvasと違いレイアウト問題なし）
+  document.getElementById('detail-chart-area').innerHTML = buildSvgChart(stockId, 560, 180);
+
+  document.getElementById('detailOverlay').classList.add('active');
+}
+
+// SVGベースのチャート生成（canvasと違いDOM埋め込みなのでレイアウト問題が起きない）
+function buildSvgChart(stockId, svgW, svgH) {
+  const hist = state.priceHistory[stockId] || [];
+  if (hist.length < 2) return '<div style="text-align:center;color:#ccc;padding:30px;">データが まだ ないよ</div>';
+
+  const pad = { top: 24, bottom: 28, left: 6, right: 6 };
+  const w = svgW;
+  const h = svgH;
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  const minV = Math.min(...hist);
+  const maxV = Math.max(...hist);
+  const rangeV = maxV - minV || 1;
+  const isUp = hist[hist.length - 1] >= hist[0];
+  const color = isUp ? '#e74c3c' : '#3498db';
+  const fillColor = isUp ? 'rgba(231,76,60,0.15)' : 'rgba(52,152,219,0.15)';
+
+  // 座標計算
+  function px(i) { return pad.left + (i / (hist.length - 1)) * plotW; }
+  function py(v) { return pad.top + plotH - ((v - minV) / rangeV) * plotH; }
+
+  // 折れ線のpath
+  const linePoints = hist.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`);
+  const linePath = 'M' + linePoints.join(' L');
+
+  // 塗りつぶしのpath
+  const fillPath = linePath + ` L${px(hist.length-1).toFixed(1)},${(pad.top + plotH).toFixed(1)} L${pad.left},${(pad.top + plotH).toFixed(1)} Z`;
+
+  // グリッド線
+  let gridLines = '';
+  for (let i = 0; i <= 4; i++) {
+    const gy = pad.top + (plotH / 4) * i;
+    gridLines += `<line x1="${pad.left}" y1="${gy.toFixed(1)}" x2="${w - pad.right}" y2="${gy.toFixed(1)}" stroke="#eee" stroke-width="1"/>`;
+  }
+
+  // ドットとラベル
+  let dots = '';
+  hist.forEach((v, i) => {
+    const cx = px(i);
+    const cy = py(v);
+    if (i === hist.length - 1) {
+      // 最新点（大きく＋ラベル）
+      dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="7" fill="${color}"/>`;
+      dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="white"/>`;
+      const labelY = cy - 12 > pad.top ? cy - 12 : cy + 18;
+      dots += `<text x="${cx.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="end" fill="${color}" font-size="13" font-weight="bold">${v}円</text>`;
+    } else if (i === 0) {
+      // 開始点
+      dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="${color}" opacity="0.5"/>`;
+      dots += `<text x="${(cx + 4).toFixed(1)}" y="${(cy - 8).toFixed(1)}" fill="#999" font-size="10">${v}円</text>`;
+    } else if (hist.length <= 20) {
+      dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="${color}" opacity="0.4"/>`;
+    }
+  });
+
+  // 高値/安値ラベル
+  const highY = py(maxV);
+  const lowY  = py(minV);
+  let labels = '';
+  labels += `<text x="${(w - pad.right).toFixed(1)}" y="${(pad.top - 6).toFixed(1)}" text-anchor="end" fill="#bbb" font-size="10">⬆️ たかい: ${maxV}円</text>`;
+  labels += `<text x="${(w - pad.right).toFixed(1)}" y="${(h - 6).toFixed(1)}" text-anchor="end" fill="#bbb" font-size="10">⬇️ やすい: ${minV}円</text>`;
+
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;background:#fafafa;border-radius:12px;">
+    ${gridLines}
+    <path d="${fillPath}" fill="${fillColor}"/>
+    <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+    ${labels}
+  </svg>`;
+}
+
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('active'); }
+function closeDetailFromBg(e) { if (e.target === document.getElementById('detailOverlay')) closeDetail(); }
+
+// ===== 履歴 =====
+function renderPayoutHistory() {
+  const tbody = document.getElementById('payoutBody');
+  if (state.payoutHistory.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">まだ おこづかいを もらっていません</td></tr>'; return; }
+  tbody.innerHTML = '';
+  [...state.payoutHistory].reverse().forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.month}</td><td>${p.totalAsset.toLocaleString()}円</td><td>${p.profit >= 0 ? '+' : ''}${p.profit}円</td><td class="${p.action === 'paid' ? 'paid' : 'skipped'}">${p.action === 'paid' ? 'もらった！' : 'もらわない'}</td><td>${p.action === 'paid' ? p.amount + '円' : '—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function renderHistory() {
+  const tbody = document.getElementById('historyBody');
+  if (state.history.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">まだ とりひき が ありません</td></tr>'; return; }
+  tbody.innerHTML = '';
+  [...state.history].reverse().forEach(h => {
+    const tr = document.createElement('tr');
+    tr.className = h.action === 'buy' ? 'buy-row' : 'sell-row';
+    tr.innerHTML = `<td>${h.date}</td><td>${h.stockName}</td><td>${h.action === 'buy' ? 'かった' : 'うった'}</td><td>${h.price}円</td><td>${h.qty}かぶ</td><td>${h.total}円</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// =====================================================
+// 売買モーダル
+// =====================================================
+let modalState = {};
+function showModal(html) { document.getElementById('modalContent').innerHTML = html; document.getElementById('modal').classList.add('active'); }
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+function openTradeModal(stockId, action) {
+  const stock = STOCKS.find(s => s.id === stockId);
+  const price = state.currentGamePrices[stockId];
+  const holding = state.holdings[stockId] || { qty: 0 };
+  if (action === 'buy' && Math.floor(state.cash / price) === 0) { alert('おかねが たりません！'); return; }
+  if (action === 'sell' && holding.qty === 0) return;
+  modalState = { stockId, action, qty: 1, type: 'trade' };
+  updateTradeModal();
+}
+function updateTradeModal() {
+  const { stockId, action, qty } = modalState;
+  const stock = STOCKS.find(s => s.id === stockId);
+  const price = state.currentGamePrices[stockId];
+  const holding = state.holdings[stockId] || { qty: 0, avgCost: 0 };
+  const total = price * qty;
+  let detailText, confirmClass, confirmLabel;
+  if (action === 'buy') {
+    detailText = `ごうけい ${total}円 つかう（のこり ${state.cash - total}円）`;
+    confirmClass = 'btn-confirm'; confirmLabel = '🛒 かう！';
+  } else {
+    const profit = (price - holding.avgCost) * qty;
+    detailText = `${total}円 もらえる（${profit >= 0 ? '+' + profit + '円 もうかる！' : profit + '円 そんする'}）`;
+    confirmClass = 'btn-confirm sell-confirm'; confirmLabel = '💰 うる！';
+  }
+  showModal(`
+    <h2>${stock.emoji} ${stock.name} を ${action === 'buy' ? 'かう' : 'うる'}</h2>
+    <div class="modal-price">${price}円 × ${qty}かぶ</div>
+    <div class="qty-control">
+      <button onclick="changeTradeQty(-1)">−</button>
+      <span>${qty}</span>
+      <button onclick="changeTradeQty(1)">＋</button>
+    </div>
+    <div class="modal-detail">${detailText}</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">やめる</button>
+      <button class="${confirmClass}" onclick="confirmTrade()">${confirmLabel}</button>
+    </div>`);
+}
+function changeTradeQty(delta) {
+  const { stockId, action } = modalState;
+  const price = state.currentGamePrices[stockId];
+  const holding = state.holdings[stockId] || { qty: 0 };
+  let nq = modalState.qty + delta;
+  if (nq < 1) nq = 1;
+  if (action === 'buy') nq = Math.min(nq, Math.floor(state.cash / price));
+  else nq = Math.min(nq, holding.qty);
+  modalState.qty = nq;
+  updateTradeModal();
+}
+function confirmTrade() {
+  const { stockId, action, qty } = modalState;
+  const stock = STOCKS.find(s => s.id === stockId);
+  const price = state.currentGamePrices[stockId];
+  const total = price * qty;
+  const now = new Date();
+  const dateStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  if (action === 'buy') {
+    if (total > state.cash) { alert('おかねが たりません！'); return; }
+    state.cash -= total;
+    if (!state.holdings[stockId]) state.holdings[stockId] = { qty: 0, avgCost: 0 };
+    const h = state.holdings[stockId];
+    const tc = h.avgCost * h.qty + total;
+    h.qty += qty; h.avgCost = Math.round(tc / h.qty);
+  } else {
+    const h = state.holdings[stockId];
+    if (!h || h.qty < qty) { alert('かぶが たりません！'); return; }
+    state.cash += total; h.qty -= qty;
+    if (h.qty === 0) delete state.holdings[stockId];
+  }
+  state.history.push({ date: dateStr, stockId, stockName: stock.name, action, price, qty, total });
+  saveState(); closeModal(); closeDetail(); updateUI();
+}
+
+// =====================================================
+// おこづかい精算
+// =====================================================
+function checkPayoutEligibility() {
+  const { profit } = calcTotals();
+  const mk = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+  const b = document.getElementById('payoutBanner');
+  (profit > 0 && state.lastPayoutMonth !== mk) ? b.classList.add('active') : b.classList.remove('active');
+}
+function openPayoutModal() {
+  const { total, profit } = calcTotals();
+  const now = new Date();
+  const mk = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const ml = `${now.getFullYear()}ねん${now.getMonth()+1}がつ`;
+  if (state.lastPayoutMonth === mk) { showModal(`<h2>🎁 おこづかい せいさん</h2><div class="modal-detail">こんげつは もう せいさん ずみだよ！</div><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">とじる</button></div>`); return; }
+  if (profit <= 0) { showModal(`<h2>🎁 おこづかい せいさん</h2><div class="modal-price" style="color:var(--blue)">${profit}円</div><div class="modal-detail">ざんねん、まだ りえき が ないよ。<br>がんばって ふやそう！</div><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">とじる</button></div>`); return; }
+  modalState = { type: 'payout', monthKey: mk, monthLabel: ml, total, profit };
+  showModal(`
+    <h2>🎉 ${ml} おこづかい せいさん</h2>
+    <div style="margin:14px 0;">
+      <div style="font-size:0.85em;color:#888;">いまの しさん</div>
+      <div style="font-size:1.5em;font-weight:900;color:var(--purple);">${total.toLocaleString()}円</div>
+      <div style="font-size:0.85em;color:#888;margin-top:6px;">もとで（${state.initialCapital.toLocaleString()}円）との さ</div>
+      <div style="font-size:2em;font-weight:900;color:var(--green);">+${profit.toLocaleString()}円</div>
+      <div style="margin-top:10px;font-size:0.82em;color:#555;line-height:1.6;">
+        この <b>${profit}円</b> を ほんものの おこづかい として もらえるよ！<br>
+        もらうと しさんは <b>${state.initialCapital.toLocaleString()}円</b> に もどるよ。
+      </div>
+    </div>
+    <div class="modal-actions" style="flex-wrap:wrap;gap:8px;">
+      <button class="btn-cancel" onclick="payoutDecision('skip')">もらわない</button>
+      <button class="btn-confirm payout-confirm" onclick="payoutDecision('paid')">🎁 ${profit}円 もらう！</button>
+    </div>`);
+}
+function payoutDecision(decision) {
+  const { monthKey, monthLabel, total, profit } = modalState;
+  if (decision === 'paid') {
+    state.cash -= profit; if (state.cash < 0) state.cash = 0;
+    state.totalPaidOut += profit;
+    state.payoutHistory.push({ month: monthLabel, totalAsset: total, profit, action: 'paid', amount: profit, date: new Date().toISOString() });
+  } else {
+    state.payoutHistory.push({ month: monthLabel, totalAsset: total, profit, action: 'skipped', amount: 0, date: new Date().toISOString() });
+  }
+  state.lastPayoutMonth = monthKey; saveState(); closeModal(); checkPayoutEligibility(); updateUI();
+}
+
+// =====================================================
+// データ
+// =====================================================
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const n = new Date();
+  a.download = `kabu-game-${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  const btn = document.querySelector('.data-btns button:first-child');
+  const orig = btn.textContent; btn.textContent = '✅ OK！'; setTimeout(() => btn.textContent = orig, 2000);
+}
+function importData(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imp = JSON.parse(e.target.result);
+      if (typeof imp.cash !== 'number' || !imp.history) { alert('ただしい データ ファイル では ありません'); return; }
+      state = imp; saveState(); updateUI(); checkPayoutEligibility(); alert('データを よみこみました！');
+    } catch(err) { alert('ファイルが よめません でした'); }
+  };
+  reader.readAsText(file); event.target.value = '';
+}
+function resetGame() {
+  if (confirm('ほんとうに リセット しますか？\nすべてのデータがきえます。\n\nさきに「ほぞん」しておくと あんしんだよ！')) {
+    state = defaultState(); saveState(); fetchPrices();
+  }
+}
+
+// =====================================================
+// 初期化
+// =====================================================
+window.addEventListener('load', () => {
+  STOCKS.forEach(s => { if (!state.currentRealPrices[s.id]) applyRealPrice(s.id, BASE_REAL_PRICES[s.id]); });
+  initChartHistory(); updateUI(); fetchPrices();
+});
+setInterval(fetchPrices, 5 * 60 * 1000);
+</script>
+</body>
+</html>
