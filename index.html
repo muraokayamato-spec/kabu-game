@@ -610,7 +610,7 @@
 // 銘柄設定
 // =====================================================
 const STOCKS = [
-  { id:'toyota',     name:'トヨタ',         flag:'🇯🇵', emoji:'🚗', color:'#1a73e8', symbol:'7203.T', type:'jp', divisor:100,  volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'せかいで いちばん おおきい くるまの かいしゃ。たくさんの くるまを つくっているよ。あんていした かぶだね。' },
+  { id:'bandai',     name:'バンダイナムコ',   flag:'🇯🇵', emoji:'🧸', color:'#e91e63', symbol:'7832.T', type:'jp', divisor:100,  volatility:2.0, tag:'volatile', tagLabel:'おおきくうごく', desc:'ガンダムや たまごっちの おもちゃ、ゲームを つくっている かいしゃ。あたらしい おもちゃが でると おおきく うごくよ！' },
   { id:'seven',      name:'セブンイレブン',   flag:'🇯🇵', emoji:'🏪', color:'#e8590c', symbol:'3382.T', type:'jp', divisor:100,  volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'みんなが しっている コンビニ。まいにち たくさんの ひとが おかいものを するから、あんていしているよ。' },
   { id:'nintendo',   name:'にんてんどう',     flag:'🇯🇵', emoji:'🎮', color:'#e60012', symbol:'7974.T', type:'jp', divisor:100,  volatility:1.0, tag:'moderate', tagLabel:'ふつう',         desc:'マリオや スイッチで ゆうめいな ゲームがいしゃ。あたらしい ゲームが でると かぶが うごくよ！' },
   { id:'fastretail', name:'ユニクロ',         flag:'🇯🇵', emoji:'👕', color:'#c2255c', symbol:'9983.T', type:'jp', divisor:1000, volatility:1.0, tag:'moderate', tagLabel:'ふつう',         desc:'ふくを つくる おおきな かいしゃ。せかいじゅうに おみせが あるよ。ふくが うれると かぶが あがるよ。' },
@@ -619,12 +619,12 @@ const STOCKS = [
   { id:'mcdonalds',  name:'マクドナルド',     flag:'🇺🇸', emoji:'🍔', color:'#ffc107', symbol:'MCD',    type:'us', divisor:10,   volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'ハンバーガーの おみせ！ せかいじゅうに あるから、いつも あんていしているよ。' },
   { id:'apple',      name:'アップル',         flag:'🇺🇸', emoji:'🍎', color:'#333333', symbol:'AAPL',   type:'us', divisor:10,   volatility:1.2, tag:'moderate', tagLabel:'ふつう',         desc:'iPhone を つくっている かいしゃ。あたらしい iPhone が でると おおきく うごくよ。' },
   { id:'google',     name:'Google',           flag:'🇺🇸', emoji:'📺', color:'#4285f4', symbol:'GOOGL',  type:'us', divisor:10,   volatility:2.0, tag:'volatile', tagLabel:'おおきくうごく', desc:'YouTube を つくった かいしゃ。けんさく も Google だよね。せかいで いちばん おおきい IT の かいしゃの ひとつ！' },
-  { id:'calbee',     name:'カルビー',         flag:'🇯🇵', emoji:'🍟', color:'#e64a19', symbol:'2229.T', type:'jp', divisor:100,  volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'ポテトチップスや かっぱえびせんを つくっている かいしゃ。みんな だいすきな おかしだね！' },
+  { id:'sony',       name:'ソニー',           flag:'🇯🇵', emoji:'🎬', color:'#000000', symbol:'6758.T', type:'jp', divisor:100,  volatility:2.0, tag:'volatile', tagLabel:'おおきくうごく', desc:'プレイステーションや えいが、おんがくの かいしゃ。ゲームや えいがが ヒットすると おおきく うごくよ！' },
 ];
 
 const BASE_REAL_PRICES = {
-  toyota:3714, seven:2334, nintendo:8930, fastretail:68510, disney:2814,
-  cocacola:78.61, mcdonalds:325.97, apple:273.68, google:306.22, calbee:3047
+  bandai:4010, seven:2334, nintendo:8930, fastretail:68510, disney:2814,
+  cocacola:78.61, mcdonalds:325.97, apple:273.68, google:306.22, sony:3552
 };
 
 // =====================================================
