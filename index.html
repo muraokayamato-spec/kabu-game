@@ -778,13 +778,19 @@ function initChartHistory() {
   STOCKS.forEach(stock => {
     const hist = state.priceHistory[stock.id] || [];
     if (hist.length < 2) {
-      // 既存の値があれば末尾として使う
-      const base = (hist.length === 1) ? hist[0] : (state.currentGamePrices[stock.id] || state.gameBasePrices[stock.id]);
-      state.priceHistory[stock.id] = [];
-      for (let i = 9; i >= 0; i--) {
-        state.priceHistory[stock.id].push(Math.max(1, Math.round(base + (Math.random() - 0.5) * base * stock.volatility * 0.03)));
+      // ランダムウォークで自然なトレンドを生成
+      const end = (hist.length === 1) ? hist[0] : (state.currentGamePrices[stock.id] || state.gameBasePrices[stock.id]);
+      const vol = stock.volatility; // 0.5=安定, 1.0=普通, 2.0=激しい
+      const drift = (Math.random() - 0.5) * 0.04 * vol; // 銘柄ごとの上昇/下降トレンド
+      const steps = 5;
+      // 末尾(=end)から逆算して開始値を決め、間をランダムウォークで埋める
+      const prices = [end];
+      for (let i = 0; i < steps - 1; i++) {
+        const prev = prices[0];
+        const change = prev * (drift + (Math.random() - 0.5) * 0.03 * vol);
+        prices.unshift(Math.max(1, Math.round(prev - change)));
       }
-      state.priceHistory[stock.id].push(base);
+      state.priceHistory[stock.id] = prices;
     }
   });
 }
