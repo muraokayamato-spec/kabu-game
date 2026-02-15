@@ -179,34 +179,27 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .card-badges {
-    display: flex;
-    gap: 4px;
-    margin-top: 2px;
-    flex-wrap: wrap;
-  }
-  .card-badges .tag {
+  .tag {
     display: inline-block;
-    padding: 1px 7px;
+    padding: 2px 8px;
     border-radius: 10px;
-    font-size: 0.58em;
+    font-size: 0.62em;
     font-weight: bold;
     color: white;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .tag.stable   { background: var(--green); }
   .tag.moderate { background: var(--gold); }
   .tag.volatile { background: var(--red); }
-  .card-badges .coeff {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: 10px;
-    font-size: 0.58em;
-    font-weight: bold;
-    color: white;
-    background: var(--purple);
+
+  .card-short-desc {
+    font-size: 0.72em;
+    color: var(--gray);
+    margin-top: 1px;
   }
 
-  /* 価格と矢印 */
+  /* 価格 */
   .card-price-row {
     display: flex;
     align-items: center;
@@ -219,32 +212,16 @@
     line-height: 1;
   }
 
-  .card-arrow {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 56px;
+  /* トレンド表示 */
+  .card-trend {
+    font-size: 0.82em;
+    font-weight: 700;
+    padding: 4px 0;
+    margin-bottom: 2px;
   }
-  .card-arrow .arrow-icon {
-    font-size: 1.6em;
-    line-height: 1;
-  }
-  .card-arrow .arrow-pct {
-    font-size: 0.85em;
-    font-weight: 800;
-  }
-  .card-arrow.up .arrow-icon   { color: var(--red); }
-  .card-arrow.up .arrow-pct    { color: var(--red); }
-  .card-arrow.down .arrow-icon { color: var(--blue); }
-  .card-arrow.down .arrow-pct  { color: var(--blue); }
-  .card-arrow.flat .arrow-icon { color: var(--gray); }
-  .card-arrow.flat .arrow-pct  { color: var(--gray); }
-
-  .card-real-price {
-    font-size: 0.7em;
-    color: var(--gray);
-    margin-bottom: 6px;
-  }
+  .card-trend.up   { color: var(--red); }
+  .card-trend.down { color: var(--blue); }
+  .card-trend.flat { color: var(--gray); }
 
   /* ミニチャート */
   .card-chart { height: 52px; margin: 2px 0 6px; }
@@ -610,16 +587,16 @@
 // 銘柄設定
 // =====================================================
 const STOCKS = [
-  { id:'bandai',     name:'バンダイナムコ',   flag:'🇯🇵', emoji:'🧸', color:'#e91e63', symbol:'7832.T', type:'jp', divisor:100,  volatility:2.0, tag:'volatile', tagLabel:'おおきくうごく', desc:'ガンダムや たまごっちの おもちゃ、ゲームを つくっている かいしゃ。あたらしい おもちゃが でると おおきく うごくよ！' },
-  { id:'seven',      name:'セブンイレブン',   flag:'🇯🇵', emoji:'🏪', color:'#e8590c', symbol:'3382.T', type:'jp', divisor:100,  volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'みんなが しっている コンビニ。まいにち たくさんの ひとが おかいものを するから、あんていしているよ。' },
-  { id:'nintendo',   name:'にんてんどう',     flag:'🇯🇵', emoji:'🎮', color:'#e60012', symbol:'7974.T', type:'jp', divisor:100,  volatility:1.0, tag:'moderate', tagLabel:'ふつう',         desc:'マリオや スイッチで ゆうめいな ゲームがいしゃ。あたらしい ゲームが でると かぶが うごくよ！' },
-  { id:'fastretail', name:'ユニクロ',         flag:'🇯🇵', emoji:'👕', color:'#c2255c', symbol:'9983.T', type:'jp', divisor:1000, volatility:1.0, tag:'moderate', tagLabel:'ふつう',         desc:'ふくを つくる おおきな かいしゃ。せかいじゅうに おみせが あるよ。ふくが うれると かぶが あがるよ。' },
-  { id:'disney',     name:'ディズニー',       flag:'🇯🇵', emoji:'🎢', color:'#1b8ecf', symbol:'4661.T', type:'jp', divisor:100,  volatility:1.0, tag:'moderate', tagLabel:'ふつう',         desc:'ディズニーランドと ディズニーシーを つくっている かいしゃ。あそびに いったこと あるかな？' },
-  { id:'cocacola',   name:'コカ・コーラ',     flag:'🇺🇸', emoji:'🥤', color:'#d32f2f', symbol:'KO',     type:'us', divisor:1,    volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'みんなが のむ ジュースの かいしゃ。アメリカの かいしゃだよ。とっても あんていしているよ。' },
-  { id:'mcdonalds',  name:'マクドナルド',     flag:'🇺🇸', emoji:'🍔', color:'#ffc107', symbol:'MCD',    type:'us', divisor:10,   volatility:0.5, tag:'stable',   tagLabel:'あんてい',       desc:'ハンバーガーの おみせ！ せかいじゅうに あるから、いつも あんていしているよ。' },
-  { id:'apple',      name:'アップル',         flag:'🇺🇸', emoji:'🍎', color:'#333333', symbol:'AAPL',   type:'us', divisor:10,   volatility:1.2, tag:'moderate', tagLabel:'ふつう',         desc:'iPhone を つくっている かいしゃ。あたらしい iPhone が でると おおきく うごくよ。' },
-  { id:'google',     name:'Google',           flag:'🇺🇸', emoji:'📺', color:'#4285f4', symbol:'GOOGL',  type:'us', divisor:10,   volatility:2.0, tag:'volatile', tagLabel:'おおきくうごく', desc:'YouTube を つくった かいしゃ。けんさく も Google だよね。せかいで いちばん おおきい IT の かいしゃの ひとつ！' },
-  { id:'sony',       name:'ソニー',           flag:'🇯🇵', emoji:'🎬', color:'#000000', symbol:'6758.T', type:'jp', divisor:100,  volatility:2.0, tag:'volatile', tagLabel:'おおきくうごく', desc:'プレイステーションや えいが、おんがくの かいしゃ。ゲームや えいがが ヒットすると おおきく うごくよ！' },
+  { id:'bandai',     name:'バンダイナムコ',   flag:'🇯🇵', emoji:'🧸', color:'#e91e63', symbol:'7832.T', type:'jp', divisor:100,  volatility:2.0, tag:'volatile', tagLabel:'🐎 はげしい',   shortDesc:'おもちゃと ゲームの かいしゃ', desc:'ガンダムや たまごっちの おもちゃ、ゲームを つくっている かいしゃ。あたらしい おもちゃが でると おおきく うごくよ！' },
+  { id:'seven',      name:'セブンイレブン',   flag:'🇯🇵', emoji:'🏪', color:'#e8590c', symbol:'3382.T', type:'jp', divisor:100,  volatility:0.5, tag:'stable',   tagLabel:'🐢 ゆっくり',   shortDesc:'コンビニの かいしゃ',           desc:'みんなが しっている コンビニ。まいにち たくさんの ひとが おかいものを するから、あんていしているよ。' },
+  { id:'nintendo',   name:'にんてんどう',     flag:'🇯🇵', emoji:'🎮', color:'#e60012', symbol:'7974.T', type:'jp', divisor:100,  volatility:1.0, tag:'moderate', tagLabel:'🐕 ふつう',     shortDesc:'ゲームの かいしゃ',             desc:'マリオや スイッチで ゆうめいな ゲームがいしゃ。あたらしい ゲームが でると かぶが うごくよ！' },
+  { id:'fastretail', name:'ユニクロ',         flag:'🇯🇵', emoji:'👕', color:'#c2255c', symbol:'9983.T', type:'jp', divisor:1000, volatility:1.0, tag:'moderate', tagLabel:'🐕 ふつう',     shortDesc:'ふくの かいしゃ',               desc:'ふくを つくる おおきな かいしゃ。せかいじゅうに おみせが あるよ。ふくが うれると かぶが あがるよ。' },
+  { id:'disney',     name:'ディズニー',       flag:'🇯🇵', emoji:'🎢', color:'#1b8ecf', symbol:'4661.T', type:'jp', divisor:100,  volatility:1.0, tag:'moderate', tagLabel:'🐕 ふつう',     shortDesc:'テーマパークの かいしゃ',       desc:'ディズニーランドと ディズニーシーを つくっている かいしゃ。あそびに いったこと あるかな？' },
+  { id:'cocacola',   name:'コカ・コーラ',     flag:'🇺🇸', emoji:'🥤', color:'#d32f2f', symbol:'KO',     type:'us', divisor:1,    volatility:0.5, tag:'stable',   tagLabel:'🐢 ゆっくり',   shortDesc:'ジュースの かいしゃ',           desc:'みんなが のむ ジュースの かいしゃ。アメリカの かいしゃだよ。とっても あんていしているよ。' },
+  { id:'mcdonalds',  name:'マクドナルド',     flag:'🇺🇸', emoji:'🍔', color:'#ffc107', symbol:'MCD',    type:'us', divisor:10,   volatility:0.5, tag:'stable',   tagLabel:'🐢 ゆっくり',   shortDesc:'ハンバーガーの かいしゃ',       desc:'ハンバーガーの おみせ！ せかいじゅうに あるから、いつも あんていしているよ。' },
+  { id:'apple',      name:'アップル',         flag:'🇺🇸', emoji:'🍎', color:'#333333', symbol:'AAPL',   type:'us', divisor:10,   volatility:1.2, tag:'moderate', tagLabel:'🐕 ふつう',     shortDesc:'iPhoneの かいしゃ',             desc:'iPhone を つくっている かいしゃ。あたらしい iPhone が でると おおきく うごくよ。' },
+  { id:'google',     name:'Google',           flag:'🇺🇸', emoji:'📺', color:'#4285f4', symbol:'GOOGL',  type:'us', divisor:10,   volatility:2.0, tag:'volatile', tagLabel:'🐎 はげしい',   shortDesc:'YouTubeの かいしゃ',            desc:'YouTube を つくった かいしゃ。けんさく も Google だよね。せかいで いちばん おおきい IT の かいしゃの ひとつ！' },
+  { id:'sony',       name:'ソニー',           flag:'🇯🇵', emoji:'🎬', color:'#000000', symbol:'6758.T', type:'jp', divisor:100,  volatility:2.0, tag:'volatile', tagLabel:'🐎 はげしい',   shortDesc:'ゲームと えいがの かいしゃ',    desc:'プレイステーションや えいが、おんがくの かいしゃ。ゲームや えいがが ヒットすると おおきく うごくよ！' },
 ];
 
 const BASE_REAL_PRICES = {
@@ -696,6 +673,37 @@ function getChange(stockId) {
   return { pct, pts: curr - prev, dir: curr > prev ? 'up' : 'down' };
 }
 
+// 直近の推移からトレンドを判定（カード表示用）
+function getTrend(stockId) {
+  const hist = state.priceHistory[stockId] || [];
+  if (hist.length < 2) return { text: 'データ なし', icon: '❓', cls: 'flat' };
+  const first = hist[0];
+  const last = hist[hist.length - 1];
+  const totalPct = ((last - first) / first * 100);
+
+  // 連続上昇・下降のカウント
+  let streak = 0;
+  let streakDir = 0; // 1=up, -1=down
+  for (let i = hist.length - 1; i >= 1; i--) {
+    const diff = hist[i] - hist[i - 1];
+    if (diff > 0) {
+      if (streakDir === -1) break;
+      streakDir = 1; streak++;
+    } else if (diff < 0) {
+      if (streakDir === 1) break;
+      streakDir = -1; streak++;
+    } else { break; }
+  }
+
+  if (streakDir === 1 && streak >= 3) return { text: `${streak}にち れんぞく あがってる！`, icon: '🔥', cls: 'up' };
+  if (streakDir === 1 && streak >= 2) return { text: 'あがってきてる', icon: '📈', cls: 'up' };
+  if (streakDir === -1 && streak >= 3) return { text: `${streak}にち れんぞく さがってる`, icon: '💧', cls: 'down' };
+  if (streakDir === -1 && streak >= 2) return { text: 'さがりぎみ', icon: '📉', cls: 'down' };
+  if (totalPct > 2) return { text: 'すこし あがった', icon: '↗️', cls: 'up' };
+  if (totalPct < -2) return { text: 'すこし さがった', icon: '↘️', cls: 'down' };
+  return { text: 'あまり かわらない', icon: '➡️', cls: 'flat' };
+}
+
 // =====================================================
 // 株価取得
 // =====================================================
@@ -714,9 +722,8 @@ async function fetchPrices() {
       data.spark.result.forEach(item => {
         const stock = STOCKS.find(s => s.symbol === item.symbol);
         if (stock && item.response && item.response[0]) {
-          const closes = item.response[0].indicators.quote[0].close;
-          const rp = closes[closes.length - 1];
-          if (rp) applyRealPrice(stock.id, rp);
+          const closes = item.response[0].indicators.quote[0].close.filter(v => v != null);
+          if (closes.length > 0) applyRealPrices(stock.id, closes);
         }
       });
       fetched = true;
@@ -735,14 +742,28 @@ async function fetchPrices() {
 
   if (!fetched) {
     STOCKS.forEach(s => { if (!state.currentRealPrices[s.id]) applyRealPrice(s.id, BASE_REAL_PRICES[s.id]); });
-    initChartHistory();
     document.getElementById('updateTime').textContent = `きじゅん かかく（${new Date().toLocaleTimeString('ja-JP')}）`;
   } else {
     document.getElementById('updateTime').textContent = `さいしん: ${new Date().toLocaleString('ja-JP')}`;
   }
+  // チャートデータが不足している銘柄にダミー履歴を生成
+  initChartHistory();
   saveState(); checkPayoutEligibility(); updateUI();
 }
 
+// 複数日分のリアル価格をまとめて反映（5日分チャート用）
+function applyRealPrices(stockId, realPrices) {
+  state.priceHistory[stockId] = [];
+  realPrices.forEach(rp => {
+    const gp = calcGamePrice(stockId, rp);
+    state.priceHistory[stockId].push(gp);
+  });
+  const lastReal = realPrices[realPrices.length - 1];
+  state.currentRealPrices[stockId] = lastReal;
+  state.currentGamePrices[stockId] = calcGamePrice(stockId, lastReal);
+}
+
+// 単一価格の反映（フォールバック用）
 function applyRealPrice(stockId, realPrice) {
   state.currentRealPrices[stockId] = realPrice;
   state.currentGamePrices[stockId] = calcGamePrice(stockId, realPrice);
@@ -755,9 +776,11 @@ function applyRealPrice(stockId, realPrice) {
 }
 function initChartHistory() {
   STOCKS.forEach(stock => {
-    if (!state.priceHistory[stock.id] || state.priceHistory[stock.id].length === 0) {
+    const hist = state.priceHistory[stock.id] || [];
+    if (hist.length < 2) {
+      // 既存の値があれば末尾として使う
+      const base = (hist.length === 1) ? hist[0] : (state.currentGamePrices[stock.id] || state.gameBasePrices[stock.id]);
       state.priceHistory[stock.id] = [];
-      const base = state.currentGamePrices[stock.id] || state.gameBasePrices[stock.id];
       for (let i = 9; i >= 0; i--) {
         state.priceHistory[stock.id].push(Math.max(1, Math.round(base + (Math.random() - 0.5) * base * stock.volatility * 0.03)));
       }
@@ -804,8 +827,7 @@ function renderStockCards() {
     if (!price) return;
 
     const ch = getChange(stock.id);
-    const arrowIcon = ch.dir === 'up' ? '↑' : ch.dir === 'down' ? '↓' : '→';
-    const pctText = ch.dir === 'flat' ? '±0%' : (ch.dir === 'up' ? `+${ch.pct.toFixed(1)}%` : `${ch.pct.toFixed(1)}%`);
+    const trend = getTrend(stock.id);
 
     let holdingHTML = '';
     if (holding.qty > 0) {
@@ -818,26 +840,20 @@ function renderStockCards() {
     card.className = 'stock-card';
     card.onclick = () => openDetail(stock.id);
     card.innerHTML = `
-      <div class="card-bar ${ch.dir}"></div>
+      <div class="card-bar ${trend.cls}"></div>
       <div class="card-body">
         <div class="card-header">
           <div class="card-icon" style="background:${stock.color}">${stock.emoji}</div>
           <div class="card-header-text">
             <div class="card-name">${stock.flag} ${stock.name}</div>
-            <div class="card-badges">
-              <span class="tag ${stock.tag}">${stock.tagLabel}</span>
-              <span class="coeff">×${stock.volatility}</span>
-            </div>
+            <div class="card-short-desc">${stock.shortDesc}</div>
           </div>
-          <div class="card-arrow ${ch.dir}">
-            <span class="arrow-icon">${arrowIcon}</span>
-            <span class="arrow-pct">${pctText}</span>
-          </div>
+          <span class="tag ${stock.tag}">${stock.tagLabel}</span>
         </div>
         <div class="card-price-row">
           <span class="card-game-price">${price}円</span>
         </div>
-        <div class="card-real-price">ほんとうの かぶか: ${realPrice ? formatRealPrice(stock.id, realPrice) : '---'}</div>
+        <div class="card-trend ${trend.cls}">${trend.icon} ${trend.text}</div>
         <div class="card-chart"><canvas id="chart-${stock.id}"></canvas></div>
         ${holdingHTML}
       </div>
@@ -916,11 +932,8 @@ function openDetail(stockId) {
   const realPrice = state.currentRealPrices[stockId];
   const holding = state.holdings[stockId] || { qty: 0, avgCost: 0 };
   const ch = getChange(stockId);
+  const trend = getTrend(stockId);
   const hist = state.priceHistory[stockId] || [];
-
-  const arrowIcon = ch.dir === 'up' ? '📈' : ch.dir === 'down' ? '📉' : '➡️';
-  const pctText = ch.dir === 'flat' ? '±0%' : (ch.dir === 'up' ? `+${ch.pct.toFixed(1)}%` : `${ch.pct.toFixed(1)}%`);
-  const ptsText = ch.pts !== 0 ? `(${ch.pts > 0 ? '+' : ''}${ch.pts}円)` : '';
 
   let holdingHTML = '';
   if (holding.qty > 0) {
@@ -952,7 +965,6 @@ function openDetail(stockId) {
         <div class="dt-name">${stock.flag} ${stock.name}</div>
         <div class="dt-sub">
           <span class="tag ${stock.tag}" style="color:white;padding:1px 6px;border-radius:8px;font-size:0.85em;">${stock.tagLabel}</span>
-          <span style="background:var(--purple);color:white;padding:1px 6px;border-radius:8px;font-size:0.85em;">×${stock.volatility}</span>
         </div>
       </div>
       <button class="detail-close" onclick="closeDetail()">✕</button>
@@ -960,12 +972,7 @@ function openDetail(stockId) {
 
     <div class="detail-price-area">
       <div class="detail-game-price">${price}円</div>
-      <div class="detail-change-row ${ch.dir}">
-        <span class="detail-arrow">${arrowIcon}</span>
-        <span class="detail-change-pct">${pctText}</span>
-        <span class="detail-change-pts">${ptsText}</span>
-      </div>
-      <div class="detail-real-price">ほんとうの かぶか: ${realPrice ? formatRealPrice(stockId, realPrice) : '---'}</div>
+      <div class="detail-trend ${trend.cls}" style="font-size:1.1em;font-weight:700;margin:4px 0;">${trend.icon} ${trend.text}</div>
     </div>
 
     <div class="detail-chart" id="detail-chart-area"></div>
