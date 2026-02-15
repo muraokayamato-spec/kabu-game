@@ -1052,11 +1052,27 @@ function buildSvgChart(stockId, svgW, svgH) {
   });
 
   // 高値/安値ラベル
-  const highY = py(maxV);
-  const lowY  = py(minV);
   let labels = '';
   labels += `<text x="${(w - pad.right).toFixed(1)}" y="${(pad.top - 6).toFixed(1)}" text-anchor="end" fill="#bbb" font-size="10">⬆️ たかい: ${maxV}円</text>`;
   labels += `<text x="${(w - pad.right).toFixed(1)}" y="${(h - 6).toFixed(1)}" text-anchor="end" fill="#bbb" font-size="10">⬇️ やすい: ${minV}円</text>`;
+
+  // 横軸ラベル（きょう、きのう、○にちまえ）
+  const dayLabels = ['きょう','きのう','2にちまえ','3にちまえ','4にちまえ','5にちまえ','6にちまえ','7にちまえ','8にちまえ','9にちまえ'];
+  let xLabels = '';
+  const labelY = pad.top + plotH + 16;
+  const n = hist.length;
+  if (n >= 2) {
+    // 最後（最新）= きょう
+    xLabels += `<text x="${px(n-1).toFixed(1)}" y="${labelY}" text-anchor="end" fill="#999" font-size="10" font-weight="bold">きょう</text>`;
+    // 最初 = ○にちまえ
+    const daysAgo = n - 1;
+    const firstLabel = daysAgo < dayLabels.length ? dayLabels[daysAgo] : `${daysAgo}にちまえ`;
+    xLabels += `<text x="${px(0).toFixed(1)}" y="${labelY}" text-anchor="start" fill="#999" font-size="10">${firstLabel}</text>`;
+    // 中間（3点以上なら「きのう」も出す）
+    if (n >= 3) {
+      xLabels += `<text x="${px(n-2).toFixed(1)}" y="${labelY}" text-anchor="middle" fill="#ccc" font-size="9">きのう</text>`;
+    }
+  }
 
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;background:#fafafa;border-radius:12px;">
     ${gridLines}
@@ -1064,6 +1080,7 @@ function buildSvgChart(stockId, svgW, svgH) {
     <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     ${dots}
     ${labels}
+    ${xLabels}
   </svg>`;
 }
 
